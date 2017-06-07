@@ -1,0 +1,93 @@
+%
+% File acl17.tex
+%
+%% Based on the style files for ACL-15, with some improvements
+%%  taken from the NAACL-2016 style
+%% Based on the style files for ACL-2014, which were, in turn,
+%% based on ACL-2013, ACL-2012, ACL-2011, ACL-2010, ACL-IJCNLP-2009,
+%% EACL-2009, IJCNLP-2008...
+%% Based on the style files for EACL 2006 by 
+%%e.agirre@ehu.es or Sergi.Balari@uab.es
+%% and that of ACL 08 by Joakim Nivre and Noah Smith
+
+\documentclass[11pt,a4paper]{article}
+\usepackage[hyperref]{acl2017}
+\usepackage{times}
+\usepackage{latexsym}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{graphicx}
+
+\usepackage{url}
+
+\aclfinalcopy % Uncomment this line for the final submission
+%\def\aclpaperid{***} %  Enter the acl Paper ID here
+
+%\setlength\titlebox{5cm}
+% You can expand the titlebox if you need extra space
+% to show all the authors. Please do not make the titlebox
+% smaller than 5cm (the original size); we will check this
+% in the camera-ready version and ask you to change it back.
+
+\newcommand\BibTeX{B{\sc ib}\TeX}
+
+\title{Ling 575 WikiRobot Report}
+
+\author{Ayushi Aggarwal\\
+  Department of Linguistics \\
+  University of Washington \\
+  {\tt ayushiag@uw.edu@uw.edu} \\\And
+  Wenxi Lu \\
+  Department of Linguistics \\
+  University of Washington \\
+  {\tt wenxil@uw.edu} \\}
+
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+We present web-based model for simple wikipedia search.
+This project is still in process and there are a lot of potential improvements we plan to make. 
+\end{abstract}
+
+
+
+\section{Introduction}
+Our project is a web-based spoken dialog system designed for hands-off wikipedia searching. Usually when there are too many functions within one app, it makes users harder to follow all the right steps to find what they really want to do with the app. Therefore, our motivation is trying to make the goal of our app simple and clear for all users -- search the basic wikipedia information with multi-language speech input.
+
+\section{Methodology}
+This application uses simple HTML, CSS with JavaScript which takes in user speech as input, processes the inplut with JavaScript Web Speech API (connected with Google Speech API under Chrome), finalizes the speech and executes the commands. 
+
+\section{Related Work}
+
+
+
+\section{Results and Informal Evaluation}
+The .html file can either be opened in Chrome directly or visited at \\
+http://students.washington.edu/wenxil/575/FinalProject\_2.html \\
+Implemented functions: 
+
+Limitations of the system/current grammar - where will it not work/get stuck in a loop/etc
+
+\section{Challenges}
+The first challenge we had encountered was finding a way integrating ASR in codes. We have tried to use VoiceXML, however, it is relatively outdated and not flexible enough. In the end, we chose to use browser built-in javascript API, which is easy to use since it just provides an API connection via browser and we don’t need to worry about the implementation. Another tool we used is Wiki api which can be connected with JQuery directly in the JavaScript. 
+
+Barge-in implementation proved tough and could be implemented in the future.
+\section{Future Work}
+Other than English and Chinese, more languages can be applied into the system as long as both Google speech API and wiki API have access to the same language.
+
+The information that we obtain so far is a snippet from the wiki page given requested item. Further work can be done to improve the accuracy of the extracted information by doing more processing on the json file wiki API could return. 
+
+\section{References}
+https://developers.google.com/web/updates/2013/01/Voice-Driven-Web-Apps-Introduction-to-the-Web-Speech-API
+
+https://developer.mozilla.org/en-US/docs/Web/API/SpeechSynthesisUtterance
+
+https://www.mediawiki.org/wiki/API:Main\_page
+
+%\bibliography{report}
+%\bibliographystyle{acl_natbib}
+
+\end{document}
