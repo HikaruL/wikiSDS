@@ -13,11 +13,11 @@
     <script src="https://code.jquery.com/jquery-3.2.1.js" integrity="sha256-DZAnKJ/6XZ9si04Hgrsxu/8s717jcIzLy3oi35EouyE=" crossorigin="anonymous"></script>
 </head>
 <body>
-<h1>I am a robot who can listen, speak and search for you!</h1>
+<h1>WikiBot</h1>
 <h2>Status:</h2>
 <p id="status">Speaking...</p>
 <h2>Robot:</h2>
-<p class="conversation" id="robot">I am a robot who can listen, speak and search for you!</p>
+<p class="conversation" id="robot">I am a robot who can listen, speak and search for you! Do you want to search for something or change settings? </p>
 <h2>You:</h2>
 <div class="conversation">
     <span id="final"></span>
@@ -52,6 +52,14 @@
 <script>
     var listening = new webkitSpeechRecognition();
     var speaking = new SpeechSynthesisUtterance();
+
+    const Menu = {
+        MAIN: 0,
+        SETTING: 1,
+        SEARCH: 2
+    };
+
+    var menu = Menu.MAIN;
 
     // When we hear a word or a phrase
     listening.onresult = function(event) {
@@ -96,11 +104,13 @@
         if (isEnglish()) {
             listening.lang = 'zh-CN';
             speaking.lang = 'zh-CN';
-            setReply('已切换到中文');
+            menu = Menu.MAIN;
+            setReply('已切换到中文, 请选择搜索还是更改设置');
         } else {
             listening.lang = 'en-US';
             speaking.lang = 'en-US';
-            setReply('Switch to English');
+            menu = Menu.MAIN;
+            setReply('Switch to English, please choose search for something or change setting');
         }
     }
 
@@ -113,7 +123,13 @@
     }
 
     function setWekipedia(html) {
-        $('#robot').html(html + ' ...');
+        var attached = '';
+        if (isEnglish()) {
+            attached = 'What else do you want to search for? or say back to go back to the main menu.'
+        } else {
+            attached = '你还想搜索什么？说返回能返回主菜单'
+        }
+        $('#robot').html(html + ' ...' + attached);
     }
 
     function setInterationalReply(english, chinese) {
@@ -135,6 +151,65 @@
 
     function execute(command) {
         command = command.toLowerCase();
+        switch (menu) {
+            case Menu.MAIN:
+                executeMain(command);
+                break;
+            case Menu.SETTING:
+                executeSetting(command);
+                break;
+            case Menu.SEARCH:
+                executeSearch(command);
+                break;
+            default:
+                failToRecognize();
+        }
+    }
+
+    function executeMain(command) {
+        switch (command) {
+            case 'search for something':
+            case '搜索':
+                menu = Menu.SEARCH;
+                setInterationalReply('What do you want to search for? Or say back to go to the previous menu', '你想搜索什么? 说返回能返回主菜单');
+                break;
+            case 'change settings':
+            case '更改设置':
+                menu = Menu.SETTING;
+                setInterationalReply('What setting do you want to change, you can volume up, volume down or switch to chinese. Or say back to go to the previous menu', '选择增加音量，减小音量或者使用英文, 说返回能返回主菜单');
+                break;
+            default:
+                failToRecognize();
+        }
+        speak();
+    }
+
+    function executeSetting(command) {
+        switch (command) {
+            case 'volume up':
+            case '增加音量':
+                volumeUp();
+                break;
+            case 'volume down':
+            case '减小音量':
+                volumeDown();
+                break;
+            case 'switch to chinese':
+            case '使用英文':
+                toggleLanguage();
+                break;
+            case 'back':
+            case '返回':
+                menu = Menu.MAIN;
+                setInterationalReply('main menu, do you want to search for something or change settings', '主菜单，请选择搜索还是更改设置');
+                break;
+            default:
+                failToRecognize();
+        }
+        speak();
+    }
+
+    function executeSearch(command) {
         var searchPrefix = 'search for ';
         var searchPrefixChinese = '搜索';
         if (isEnglish() && command.startsWith(searchPrefix)) {
@@ -142,21 +217,11 @@
         } else if (!isEnglish() && command.startsWith(searchPrefixChinese)) {
             searchWiki(command.substr(searchPrefixChinese.length), false);
         } else {
-            switch (command) {
-                case 'volume up':
-                case '增加音量':
-                    volumeUp();
-                    break;
-                case 'volume down':
-                case '减小音量':
-                    volumeDown();
-                    break;
-                case 'switch to chinese':
-                case '使用英文':
-                    toggleLanguage();
-                    break;
-                default:
-                    failToRecognize();
+            if (command == 'back' || command == '返回') {
+                menu = Menu.MAIN;
+                setInterationalReply('main menu, do you want to search for something or change settings', '主菜单，请选择搜索还是更改设置');
+            } else {
+                failToRecognize();
             }
             speak();
         }
@@ -201,7 +266,18 @@
     }
 
     function failToRecognize() {
-        setInterationalReply('Failed to recognize, please say it again', '识别失败，请重试');
+        switch (menu) {
+            case Menu.MAIN:
+                setInterationalReply('Failed to recognize, please choose search for something or change setting', '识别失败，请选择搜索或者更改设置');
+                break;
+            case Menu.SETTING:
+                setInterationalReply('Failed to recognize, what setting do you want to change, you can volume up, volume down or switch to chinese', '识别失败，请选择增加音量，减小音量或者使用英文, 说返回能返回主菜单');
+                break;
+            case Menu.SEARCH:
+                setInterationalReply('Failed to recognize, please choose search for something', '识别失败，你想搜索什么, 说返回能返回主菜单');
+                break;
+
+        }
     }
 
     function searchWiki(title, isEnglish) {
@@ -237,7 +313,6 @@
         // Give interim results
         listening.interimResults = true;
         listening.lang = 'en-US';
-
         speaking.voice = window.speechSynthesis.getVoices()[10];
         speaking.voiceURI = 'native';
         speaking.lang = 'en-US';
