@@ -1,0 +1,250 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>FinalProject</title>
+    <style>
+        #status {background-color: green;}
+        #interim {color: #dddddd;}
+        .conversation {height: 100px; border: 1px solid #dddddd;}
+        .support {width: 50%; float: left;}
+    </style>
+    <script src="https://code.jquery.com/jquery-3.2.1.js" integrity="sha256-DZAnKJ/6XZ9si04Hgrsxu/8s717jcIzLy3oi35EouyE=" crossorigin="anonymous"></script>
+</head>
+<body>
+<h1>I am a robot who can listen, speak and search for you!</h1>
+<h2>Status:</h2>
+<p id="status">Speaking...</p>
+<h2>Robot:</h2>
+<p class="conversation" id="robot">I am a robot who can listen, speak and search for you!</p>
+<h2>You:</h2>
+<div class="conversation">
+    <span id="final"></span>
+    <span id="interim"></span>
+</div>
+<h2>Supported Operations:</h2>
+<div class="support">
+    <h3>When in English:</h3>
+    <dl>
+        <dt>Volume up</dt>
+        <dd>Increase Volume by 4 (10 max)</dd>
+        <dt>Volume down</dt>
+        <dd>Decrease Volume by 4 (0 min)</dd>
+        <dt>Switch to Chinese</dt>
+        <dd>Switch speech and recognition language to Chinese</dd>
+        <dt>Search for something</dt>
+        <dd>Search and show a snippet from wikipedia</dd>
+    </dl>
+</div>
+<div class="support">
+    <h3>中文时 (When in Chinese):</h3>
+    <dl>
+        <dt>增加音量</dt>
+        <dd>增加4音量 (最大为10) (Volume up)</dd>
+        <dt>减小音量</dt>
+        <dd>减少4音量 (最小为0) (Volume down)</dd>
+        <dt>使用英文</dt>
+        <dd>切换朗读和识别语言为英文 (Switch to English)</dd>
+    </dl>
+</div>
+</body>
+<script>
+    var listening = new webkitSpeechRecognition();
+    var speaking = new SpeechSynthesisUtterance();
+
+    // When we hear a word or a phrase
+    listening.onresult = function(event) {
+        var interim_transcript = '';
+        for (var i = event.resultIndex; i < event.results.length; ++i) {
+            if (event.results[i].isFinal) {
+                $('#final').text($('#final').text() + event.results[i][0].transcript);
+            } else {
+                interim_transcript += event.results[i][0].transcript;
+            }
+        }
+        $('#interim').text(interim_transcript);
+    };
+
+    // When I end listening
+    listening.onend = function (event) {
+        // I hear nothing and I will keep listening
+        if ($('#final').text() == '') {
+            listen();
+        } else {
+            toggleStatus();
+            execute($('#final').text());
+        }
+    };
+
+    // When I end speaking
+    speaking.onend = function(event) {
+        toggleStatus();
+        $('#final').text('');
+        listen();
+    };
+
+    function toggleStatus() {
+        if ($('#status').text() == 'Speaking...') {
+            $('#status').text('Listening...').css('background-color', 'red');
+        } else {
+            $('#status').text('Speaking...').css('background-color', 'green');
+        }
+    }
+
+    function toggleLanguage() {
+        if (isEnglish()) {
+            listening.lang = 'zh-CN';
+            speaking.lang = 'zh-CN';
+            setReply('已切换到中文');
+        } else {
+            listening.lang = 'en-US';
+            speaking.lang = 'en-US';
+            setReply('Switch to English');
+        }
+    }
+
+    function isEnglish() {
+        return listening.lang == 'en-US';
+    }
+
+    function setReply(text) {
+        $('#robot').text(text);
+    }
+
+    function setWekipedia(html) {
+        $('#robot').html(html + ' ...');
+    }
+
+    function setInterationalReply(english, chinese) {
+        if (isEnglish()) {
+            setReply(english);
+        } else {
+            setReply(chinese);
+        }
+    }
+
+    function speak() {
+        speaking.text = $('#robot').text();
+        speechSynthesis.speak(speaking);
+    }
+
+    function listen() {
+        listening.start();
+    }
+
+    function execute(command) {
+        command = command.toLowerCase();
+        var searchPrefix = 'search for ';
+        var searchPrefixChinese = '搜索';
+        if (isEnglish() && command.startsWith(searchPrefix)) {
+            searchWiki(command.substr(searchPrefix.length), true);
+        } else if (!isEnglish() && command.startsWith(searchPrefixChinese)) {
+            searchWiki(command.substr(searchPrefixChinese.length), false);
+        } else {
+            switch (command) {
+                case 'volume up':
+                case '增加音量':
+                    volumeUp();
+                    break;
+                case 'volume down':
+                case '减小音量':
+                    volumeDown();
+                    break;
+                case 'switch to chinese':
+                case '使用英文':
+                    toggleLanguage();
+                    break;
+                default:
+                    failToRecognize();
+            }
+            speak();
+        }
+    }
+
+    // Map from 0 - 1 to 0 - 10
+    function setVolume(value) {
+        if (value >= 10) {
+            speaking.volume = 1;
+            return 10;
+        } else if (value <= 0) {
+            speaking.volume = 0;
+            return 0;
+        } else {
+            speaking.volume = value / 10;
+            return value;
+        }
+    }
+
+    function getVolume() {
+        return Math.round(speaking.volume * 10);
+    }
+
+    // From 0 to 10
+    function volumeUp() {
+        var volume = setVolume(getVolume() + 4);
+        if (volume >= 10) {
+            setInterationalReply('Volume maxed (10)', '音量已经最大 (10)');
+        } else {
+            setInterationalReply('Volume is set to ' + volume, '音量设为' + volume);
+        }
+    }
+
+    // From 10 to 0
+    function volumeDown() {
+        var volume = setVolume(getVolume() - 4);
+        if (volume <= 0) {
+            setInterationalReply('Muted (0)', '静音 (0)');
+        } else {
+            setInterationalReply('Volume is set to ' + volume, '音量设为' + volume);
+        }
+    }
+
+    function failToRecognize() {
+        setInterationalReply('Failed to recognize, please say it again', '识别失败，请重试');
+    }
+
+    function searchWiki(title, isEnglish) {
+        var myUrl = '';
+        if (isEnglish == true) {
+            myUrl = 'http://en.wikipedia.org/w/api.php';
+        } else {
+            myUrl = 'http://zh.wikipedia.org/w/api.php';
+        }
+        $.ajax({
+            url: myUrl,
+            data: { action: 'query', list: 'search', srsearch: title, format: 'json' },
+            dataType: 'jsonp',
+            success: processResult
+        });
+    }
+
+    function processResult(apiResult){
+        if (apiResult.query.search.length > 0) {
+            for (var i = 0; i < apiResult.query.search.length;i++) {
+                console.log(apiResult.query.search[i]);
+            }
+            setWekipedia(apiResult.query.search[0].snippet);
+        } else {
+            setReply('Nothing found');
+        }
+        speak();
+    }
+
+    $(document).ready(function() {
+        // Stop listening when you stop speaking
+        listening.continuous = false;
+        // Give interim results
+        listening.interimResults = true;
+        listening.lang = 'en-US';
+
+        speaking.voice = window.speechSynthesis.getVoices()[10];
+        speaking.voiceURI = 'native';
+        speaking.lang = 'en-US';
+        setVolume(5);
+        speaking.rate = 1; // 0.1 to 10
+        speaking.pitch = 2; //0 to 2
+        speak();
+    });
+</script>
+</html>
