@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>WikiBot</title>
+    <style>
+        #status {background-color: green;}
+        #interim {color: #dddddd;}
+        .conversation {height: 100px; border: 1px solid #dddddd;}
+        .support {width: 50%; float: left;}
+    </style>
+    <script src="https://code.jquery.com/jquery-3.2.1.js" integrity="sha256-DZAnKJ/6XZ9si04Hgrsxu/8s717jcIzLy3oi35EouyE=" crossorigin="anonymous"></script>
+</head>
+<body>
+    <h1>WikiBot</h1>
+    <h2>Status:</h2>
+    <p id="status">Speaking...</p>
+    <h2>Robot:</h2>
+    <p class="conversation" id="robot">test</p>
+    <h2>You:</h2>
+    <div class="conversation">
+        <span id="final"></span>
+        <span id="interim"></span>
+    </div>
+    <h2>Supported Operations:</h2>
+    <div class="support">
+        <h3>English users keywords:</h3>
+        <dl>
+            <dt>Volume up</dt>
+            <dd>Increase Volume by 4 (10 max)</dd>
+            <dt>Volume down</dt>
+            <dd>Decrease Volume by 4 (0 min)</dd>
+            <dt>Switch to Chinese</dt>
+            <dd>Switch speech and recognition language to Chinese</dd>
+            <dt>Search Wikipedia</dt>
+            <dd>Search and show a snippet from wikipedia</dd>
+        </dl>
+    </div>
+    <div class="support">
+        <h3>中文时 (When in Chinese):</h3>
+        <dl>
+            <dt>增加音量</dt>
+            <dd>增加4音量 (最大为10) (Volume up)</dd>
+            <dt>减小音量</dt>
+            <dd>减少4音量 (最小为0) (Volume down)</dd>
+            <dt>使用英文</dt>
+            <dd>切换朗读和识别语言为英文 (Switch to English)</dd>
+        </dl>
+    </div>
+</body>
+
+<script type="text/javascript">
+    //assuming that the webkitSpeechRecognition is available in this window
+
+    var listening = new webkitSpeechRecognition();
+    //var recognizing = false;
+    var speaking = new SpeechSynthesisUtterance();
+    var searchFlag = false;
+    var changeSettingFlag = false;
+
+    //intialize the system language, volume and pitch
+    listening.continous = false;
+    listening.interimResults = true;
+    listening.lang = 'en-US';
+
+    //set bot's speech settings - language, speed, pitch, volume
+    speaking.voice = window.speechSynthesis.getVoices()[10];
+    speaking.voiceURI = 'native';
+    speaking.lang = 'en-US';
+    setVolume(5);
+    speaking.rate = 1;
+    speaking.pitch = 2;
+
+    setAndSpeakBotReply('Hello! I am WikiBot. What would you like to do - search for something or change setting?');
+
+    // When we hear a word or a phrase
+    listening.onresult = function(event) {
+        var interim_transcript = '';
+        for (var i = event.resultIndex; i < event.results.length; ++i) {
+            if (event.results[i].isFinal) {
+                $('#final').text($('#final').text() + event.results[i][0].transcript);
+            } else {
+                interim_transcript += event.results[i][0].transcript;
+            }
+        }
+        $('#interim').text(interim_transcript);
+    };
+
+    // When I end listening
+    listening.onend = function (event) {
+        // I hear nothing and I will keep listening
+        if ($('#final').text() == '') {
+            //toggleStatus('listen');
+            listening.start();
+        } else {
+
+            toggleStatus();
+            user_query = $('#final').text();
+            //printReplyMultilingual("Okay, you said " + user_query, "好的，你说 " + user_query);
+
+            //$('#final').text('');
+
+            if (searchFlag){
+                //search wikipedia 
+                searchWikipedia(user_query);
+
+            }else if (changeSettingFlag){
+                //change setting
+                changeSetting(user_query);
+                
+            }else{
+
+                //execute user command
+                executeUserQuery(user_query); 
+            }
+            
+        }
+    };
+
+    // When I end speaking
+    speaking.onend = function(event) {
+        toggleStatus();
+        $('#final').text('');
+        listening.start();
+    };
+
+     //WIKIBOT VISUAL CUES --------------------------------------------
+    /*function toggleStatus(botAction) {
+        if (botAction == 'speak') {
+            $('#status').text('Speaking...').css('background-color', 'green');
+            
+        } else if (botAction == 'listen') {
+            $('#status').text('Listening...').css('background-color', 'red');
+        }
+    }*/
+    function toggleStatus() {
+        if ($('#status').text() == 'Speaking...') {
+            $('#status').text('Listening...').css('background-color', 'red');
+        } else {
+            $('#status').text('Speaking...').css('background-color', 'green');
+        }
+    }
+
+    //LANGUAGE RECOGNITION CODE ----------------------------------------------------------------------
+    function isEnglish(){
+        //this function returns true if the bot's listening language is English
+        return listening.lang == 'en-US';
+    }
+
+    function toggleLanguage(){
+        //Toggle the language of the bot from English to Chinese and vice-a-versa
+        if (isEnglish()) {
+            listening.lang = 'zh-CN';
+            speaking.lang = 'zh-CN';
+
+            //User validation
+            setAndSpeakBotReply('已切换到中文');
+        } else {
+            listening.lang = 'en-US';
+            speaking.lang = 'en-US';
+
+            //User validation
+            setAndSpeakBotReply('Switched to English');
+        }
+    }
+
+    //BOT REPLY ------------------------------------------------------------------------------------------
+    function printReplyMultilingual(englishReply, chineseReply){
+        //Depending on the current bot language, choose and return the reply from the given english and chinese versions
+
+        if (isEnglish()){
+            //if the bot is currently in English 
+            setAndSpeakBotReply(englishReply);
+        }else {
+            setAndSpeakBotReply(chineseReply);
+        }
+    }
+
+    function setAndSpeakBotReply(botText){
+        //this function will set the bot reply in the box and cause the bot to speak the same text
+       
+        //set the bot text to the bot's box
+        $('#robot').text(botText);
+        $('#final').text('');
+
+        //set the speaking text
+        speaking.text = $('#robot').text();
+        speechSynthesis.speak(speaking);    //bot will speak the the text
+    }
+
+    function botTextToSpeech(){
+        speaking.text = $('#robot').text();
+        speechSynthesis.speak(speaking);
+
+        speaking.end();
+    }
+
+    //VOLUME CONTROL ----------------------------------------------
+    // Map from 0 - 1 to 0 - 10
+    function setVolume(value) {
+        //sets the system volume and returns the scaled up version for user view
+        if (value >= 10) {
+            speaking.volume = 1;
+            return 10;
+        } else if (value <= 0) {
+            speaking.volume = 0;
+            return 0;
+        } else {
+            speaking.volume = value / 10;
+            return value;
+        }
+    }
+
+    function getCurrentVolume(){
+        //returns the current system volume
+        return Math.round(speaking.volume * 10);
+    }
+
+    function changeVolume(volumeControl){
+        //changes the volume of the system
+
+        //get the current volume
+        currentVolume = getCurrentVolume();
+        volumeControl = volumeControl.toLowerCase();
+
+        if (volumeControl.includes('up') || volumeControl.includes('增加音量')){
+            newVolume = setVolume(currentVolume + 4);
+
+            if (newVolume >=10){
+                printReplyMultilingual('Volume maxed (10)', '音量已经最大 (10)');  
+            }else {
+                printReplyMultilingual('Okay. volume increased to ' + volumeNow, '音量设为' + volumeNow);
+            }
+
+        }else if (volumeControl.includes('down') || volumeControl.includes('减小音量')){
+            newVolume = setVolume(currentVolume - 4)
+            if (newVolume <=0){
+                printReplyMultilingual('Muted (0)', '静音 (0)');
+            }else {
+                printReplyMultilingual('Okay. volume decreased to ' + volumeNow, '音量设为' + volumeNow);
+            }
+
+        }else if (volumeControl.includes('max') || volumeControl.includes('最大值')){
+            newVolume = setVolume(10);
+            printReplyMultilingual('Okay. Volume maxed (10)', '音量已经最大 (10)'); 
+
+        }else if (volumeControl.includes('mute') || volumeControl.includes('静音')){
+            newVolume = setVolume(0);
+            printReplyMultilingual('Okay. Muted (0)', '静音 (0)');
+        }
+    }
+
+
+    //WIKI SEARCH --------------------------------------------------------------------------------------
+    function sendWikiAPICall(title) {
+        //send API call to the right wikipedia url and call the processResult function
+
+        var myURL = '';
+
+        if (isEnglish()){
+            //search English wikipedia
+            myURL = 'http://en.wikipedia.org/w/api.php';
+        }else{
+            //search chinese wikipedia
+            myURL =  'http://zh.wikipedia.org/w/api.php';
+        }
+
+        $.ajax({
+            url: 'http://en.wikipedia.org/w/api.php',
+            data: { action: 'query', list: 'search', srsearch: title, format: 'json' },
+            dataType: 'jsonp',
+            success: processResult
+        });
+    }
+
+    function setWikipediaText(html) {
+        //set the wikipedia search result in the Robot conversation box
+        $('#robot').html(html + ' ...');
+    }
+
+
+    function processResult(apiResult){
+        //process the result of wikipedia search 
+        //display the snippet as text and convert to speech
+
+        if (apiResult.query.search.length > 1) {
+            setWikipediaText(apiResult.query.search[0].snippet);
+            //speak the text given in the bot's box
+            
+            speaking.text = $('#robot').text();
+            speechSynthesis.speak(speaking);
+
+        } else {
+
+            //no search result found for this query
+            printReplyMultilingual('No result found for your query','');
+        }
+
+    }
+
+    
+    function searchWikipedia(searchStr){
+        //call the wiki API call function and respond
+
+        //var user_input = $('#final').text();
+        //next command stored in lowercase
+        command = searchStr.toLowerCase();
+
+        //list of possible query prefixes 
+        var queryPrefixArray = new Array("","search for","i want to know about", "tell me about","what do you know about", 'i would like to search for', 'i wish to know about','i wish to search for');
+        var flag = false;
+
+        for (i=0; i < queryPrefixArray.length; i++){
+            if (command.startsWith(queryPrefixArray[i])){
+
+                searchStr = command.substr(queryPrefixArray[i])
+                sendWikiAPICall(searchStr); 
+                flag = true;
+                break;
+            }
+        }
+
+        //if given grammar does not match user input, give failure message and request for another input
+        if (flag==false){
+            failureMessage();
+        }
+
+        if (speaking.pending == false){
+            //repromptMessage();
+            
+        }
+        
+    }
+
+    function executeUserQuery(command){
+        //this function executes the search, setting change, language switch
+
+        command = command.toLowerCase();
+        $('#final').text('');
+
+        if (command.startsWith('search for') && isEnglish()){
+
+            //search for the string directly without a second prompt to user for the search string
+            search_for = command.substr(searchPrefix.length);
+            printReplyMultilingual("Okay! Searching for " + search_for,'好的！搜索 '+ search_for);
+            searchWikipedia(search_for);
+
+            repromptMessage();
+        }else if (command.includes('search')){
+            //conduct wikisearch in given system language 
+            
+            changeSettingFlag = false;
+            searchFlag = true;
+
+            //bot confirmation of user choice and prompt for next input - that is search string
+            printReplyMultilingual("What do you want to search for?",'你想搜索什么？');
+
+
+        }else if (command.includes('change') || command.includes('setting')){
+
+            //change setting
+            searchFlag = false;
+            changeSettingFlag = true;
+
+            //bot confirmation of user choice and prompt for next input - that is the setting change that user wants
+            printReplyMultilingual('You can turn volume up, down, mute, or maximum. You can also switch to chinese. What would you like to do?','您可以向上，向下，静音或最大音量。你也可以切换到英文。你想干什么？？');
+
+        }else{
+            failureMessage();
+        }
+  
+    }    
+
+
+    function changeSetting(user_input){
+        //this function will call functions to change language or volume of the bot
+
+        changeSettingFlag = false;
+        user_input = user_input.toLowerCase();
+
+        if (user_input.includes('volume') || user_input.includes('max') || user_input.includes('mute')){
+            //change volume
+            changeVolume(user_input);
+
+        }else if (user_input.includes('增加音量') || user_input.includes('减小音量')) {
+            //change volume for chinese input
+            changeVolume(user_input);
+
+        }else if ((user_input=='switch to chinese') || (user_input == '使用英文')){
+           //switch language 
+            toggleLanguage();
+
+        }else {
+
+            //if grammar does not match user input
+            failureMessage();
+        }
+        
+        repromptMessage();
+        
+    }
+
+    function failureMessage(){
+        //failure and reprompt message
+
+        searchFlag = false;
+        changeSettingFlag = false;
+        printReplyMultilingual("Invalid input. Please try again. Do you want to continue with search or change setting? Please say one of the two - search or change setting.",'无法识别请再试一次。您要继续搜索还是更改设置？请说出两个搜索或更改设置之一');
+    }
+
+    function repromptMessage(){
+        //prompt for next user input after one query is processed fully 
+        searchFlag = false;
+        changeSettingFlag = false;
+        printReplyMultilingual("What would you like to do next? Please choose one of the two - search Wikipedia or change setting.",'无法识别请再试一次。您要继续搜索还是更改设置？请说出两个搜索或更改设置之一');
+
+    }
+
+</script>
