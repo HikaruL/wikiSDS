@@ -31,7 +31,7 @@
 
 \newcommand\BibTeX{B{\sc ib}\TeX}
 
-\title{Ling 575 WikiRobot Report}
+\title{WikiBot: Spoken Information Retrieval Dialog System for Wikipedia}
 
 \author{Ayushi Aggarwal\\
   Department of Linguistics \\
@@ -42,52 +42,69 @@
   University of Washington \\
   {\tt wenxil@uw.edu} \\}
 
-\date{}
+\date{June 7, 2017}
 
 \begin{document}
 \maketitle
 
-\begin{abstract}
-We present web-based model for simple wikipedia search.
-This project is still in process and there are a lot of potential improvements we plan to make. 
-\end{abstract}
-
-
-
 \section{Introduction}
-Our project is a web-based spoken dialog system designed for hands-off wikipedia searching. Usually when there are too many functions within one app, it makes users harder to follow all the right steps to find what they really want to do with the app. Therefore, our motivation is trying to make the goal of our app simple and clear for all users -- search the basic wikipedia information with multi-language speech input.
+Spoken dialog systems often scrape the web and parse out information to create a structured database(Gruenstein et.al., 2006) whereas question-answering systems(such as Schofield et.el., 2003) rely on a highly semantically structured knowledge base. WikiBot aims to quickly fetch information and respond to keyword-driven queries by mimicking the web-based and site-constrained search experience of Wikipedia through speech-only input.
+It provides a hands-off search experience which is applicable in public information systems and poverty-stricken neighborhoods where computing systems are sparsely available. 
 
-\section{Methodology}
-This application uses simple HTML, CSS with JavaScript which takes in user speech as input, processes the inplut with JavaScript Web Speech API (connected with Google Speech API under Chrome), finalizes the speech and executes the commands. 
+This spoken dialog system was designed to provide the user with a simple and satisfying user experience. Hence, there is a web-based interface where the user can track the status of the system, as it will either be speaking or listening. The user can search Wikipedia by mentioning the title of the article they want to peruse, switch to Chinese and search the Chinese Wikipedia similarly, or control the volume or pitch of the system. If the system is already in Chinese, the user can switch back to English in addition to all the other features that were available in English. Detailed instructions for using the system is available here\footnote{\url{http://students.washington.edu/wenxil/575/README.pdf}}. The user can access WikiBot through Chrome browser\footnote{\url{http://students.washington.edu/wenxil/575/WikiBot.html
+}}. User manual can be found on the same web page as well.
 
 \section{Related Work}
+Wilcock et.al.(Wilcock et al., 2015) built a multi-lingual spoken information access system that utilizes the Wikipedia database and language-specific speech components.Further, the user can switch between English, Japanese and Finish, and change topics smoothly, following the hyperlinks in Wikipedia by simply mentioning the name of that link.  
+VoicePedia(Sherwani, et al., 2007) developed a voice-based Wikipedia navigation system that closely mirrors our vision for WikiBot.
 
+\section{Resources and Framework}
+For the purpose of this application, we built a framework from the ground-up using some of the open-source and readily available Google and Wikipedia APIs. Primarily, this voice-driven information access system is powered by the Javascript Web Speech API\footnote{https://developers.google.com/web/updates/2013/01/Voice-Driven-Web-Apps-Introduction-to-the-Web-Speech-API} which provides various voice recognition features such real-time speech recognition, speech to text, event handling, and language and speech settings control. 
+To provide visual feedback to the user, WikiBot possesses a front-end that was designed using Javascript. However, the user will not be able to interact with the web-application in any way other than by providing speech input. Speech Synthesis API\footnote{https://developer.mozilla.org/en-US/docs/Web/API/SpeechSynthesisUtterance} facilitates text to speech and allows language, pitch, volume and speaking rate control. The search string provided by the user is used to perform a title-based search of Wikipedia topics using the Wikipedia API\footnote{https://www.mediawiki.org/wiki/API:Main\_page}. API calls to the English and Chinese Wikipedias returns a JSON object with the content of the entire Wikipedia page for the user-given search string. For the purpose of this project, we extract and return a snippet of the first search result matching the user's query. Further work in this direction has been discussed in the Future Work section. 
 
+\section{Evaluation and Results}
+We evaluated our system informally to roughly gauge the success of user queries and the current and future scope of functionality. 
 
-\section{Results and Informal Evaluation}
-The .html file can either be opened in Chrome directly or visited at \\
-http://students.washington.edu/wenxil/575/WikiRobot.html \\
-Implemented functions: 
+\begin{enumerate}
+\item \textbf{Basic functionality} - The app has realized basic bilingual wikipedia search along with some possible setting changes such as volume, pitch. 
 
-Limitations of the system/current grammar - where will it not work/get stuck in a loop/etc
+\item \textbf{Search speed} - Speech-based search was found to be faster than web-based search by comparing which result was generated faster for five queries. Currently, the system performs explicit comfirmation. Information access speech can further be enhanced with implicit confirmation of the user's search query.
+
+\item \textbf{Disambiguation} - 
+In its current state, the system cannot disambiguate between keywords with different Wikipedia article entries. It returns the first matching article from the result of the API call to the Wikipedia API. While some of this is due to the existence of topics with different meanings - such as 'Julius Caesar' which could represent the historical figure or the play by Shakespeare. Additionally, lack of disambiguation sometimes leads to results that are not the most accurate. For instance, a search for 'dumpling' does not result in a snippet from the 'Dumpling' wikipedia article(as checked by web-based Wikipedia search).
+
+\item \textbf{Grammar} - The system is highly keyword-driven and does not possess a flexible grammar. For example - If you the user says 'search' instead of 'search for something' when prompted with the main menu prompt, system will not recognize the input and will re-prompt the user. 
+
+\end{enumerate}
+
 
 \section{Challenges}
-The first challenge we had encountered was finding a way integrating ASR in codes. We have tried to use VoiceXML, however, it is relatively outdated and not flexible enough. In the end, we chose to use browser built-in javascript API, which is easy to use since it just provides an API connection via browser and we don’t need to worry about the implementation. Another tool we used is Wiki api which can be connected with JQuery directly in the JavaScript. 
+One of the foremost challenges with this system was asynchronous communication between the user and the Web Speech API. Coordination of user input with the system's responses and prompts was a major challenge that could only be overcome through a menu-based dialog design and turning off the continuous attribute of the speech recognizer. While we were able to perform confirmation of user input, user barge-in remains to be implemented. Given the length and descriptive unstructured nature of the text in Wikipedia articles, the user should be allowed to stop the system and request a different query. 
 
-Barge-in implementation proved tough and could be implemented in the future.
-\section{Future Work}
-Other than English and Chinese, more languages can be applied into the system as long as both Google speech API and wiki API have access to the same language.
+We contemplated using VoiceXML for our system, but opted for a web-based application in the interest of learning new up-to-date technologies. This decision also seems prudent since a speech-based Wikipedia application is mostly keyword driven and does not require a lot of grammar variation. Moreover, the Wikipedia API can be plugged in seamlessly with Javascript. 
 
-The information that we obtain so far is a snippet from the wiki page given requested item. Further work can be done to improve the accuracy of the extracted information by doing more processing on the json file wiki API could return. 
+\section{Caveats and Future Work}
+WikiBot is currently heavily keyword-driven and has a limited grammar. It is also mostly a system initiative application that does not allow barge-in by the user. 
+
+While our system successfully searches Wikipedia based on a keyword and extracts snippets from Wikipedia given that an article exists for it, there is clearly some disparity between the voice and web-based Wikipedia search experience. To bridge this gap we could further implement search result navigation to access specific sections of the Wikipedia article. Also, to interrupt the system while it is speaking requires activating speaking and listening simutaneously. Another future work could be navigation across articles by clicking on hyper-links. Disambiguation strategies could also be performed on the user input to further enhance the success rate.
+
+The system can currently only be run in Chrome browser since it uses the browser's built in Speech Recognition and Speech Synthesis APIs. Since this Web Speech API support is also available in Firefox and Edge, we predict that the system would work in these browsers too. However, system compatibility testing is intended for the future.
+
+Lastly, we envisage addition of more languages to the system, however, we would require access to language-based speech components to make multi-lingual search more robust.
+
+\section{Conclusion}
+WikiBot performs a faster keyword-based search for a voice interface than the GUI-based alternative. However, search result navigation and page browsing are significantly slower for speech-based search applications. With the addition of navigation across hyper-links and to different sections of the Wikipedia articles, WikiBot could become a useful information access application deployable on public information systems targeted towards audiences that do not have access to personal computers or smartphones. 
 
 \section{References}
-https://developers.google.com/web/updates/2013/01/Voice-Driven-Web-Apps-Introduction-to-the-Web-Speech-API
+Graham Wilcock and Kristiina Jokinen. (2015) Multilingual WikiTalk: Wikipedia-based talking robots that switch languages. SIGDial 2015.
 
-https://developer.mozilla.org/en-US/docs/Web/API/SpeechSynthesisUtterance
+Sherwani, J., Dong Yu, Tim Paek, Mary Czerwinski, Yun-Cheng Ju, and Alex Acero. "Voicepedia: towards speech-based access to unstructured information." In INTERSPEECH, vol. 7, pp. 146-149. 2007.
 
-https://www.mediawiki.org/wiki/API:Main\_page
+Gruenstein, A., Seneff, S., and Wang, C., “Scalable and
+Portable Web-Based Multimodal Dialogue Interaction
+with Geographical Databases”. Proc. Interspeech 2006.
 
-%\bibliography{report}
-%\bibliographystyle{acl_natbib}
+Schofield, E., and Zheng, Z., “A speech interface for
+open-domain question-answering”, in Proc. ACL 2003.
 
 \end{document}
