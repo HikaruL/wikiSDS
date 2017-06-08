@@ -1,0 +1,444 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>FinalProject</title>
+    <style>
+        #status {background-color: green;}
+        #interim {color: #dddddd;}
+        .conversation {height: 100px; border: 1px solid #dddddd;}
+        .support {width: 50%; float: left;}
+    </style>
+    <script src="https://code.jquery.com/jquery-3.2.1.js" integrity="sha256-DZAnKJ/6XZ9si04Hgrsxu/8s717jcIzLy3oi35EouyE=" crossorigin="anonymous"></script>
+</head>
+<body>
+<h1>WikiBot</h1>
+<h2>Status:</h2>
+<p id="status">Speaking...</p>
+<h2>Robot:</h2>
+<p class="conversation" id="robot">I am a robot who can listen, speak and search for you! Do you want to search for something or change settings? </p>
+<h2>You:</h2>
+<div class="conversation">
+    <span id="final"></span>
+    <span id="interim"></span>
+</div>
+<h2>Supported Operations:</h2>
+<div class="support">
+    <h2>When in English:</h2>
+    <h3>Main Menu</h3>
+    <dl>
+        <dt>Search for something</dt>
+        <dd>Enter search menu</dd>
+        <dt>Change settings</dt>
+        <dd>Enter setting menu</dd>
+    </dl>
+    <h3>Setting Menu</h3>
+    <dl>
+        <dt>Volume Up</dt>
+        <dd>Increase Volume by 3 (10 max)</dd>
+        <dt>Volume Down</dt>
+        <dd>Decrease Volume by 3 (0 min)</dd>
+        <dt>Pitch Up</dt>
+        <dd>Increase Pitch by 3 (10 max)</dd>
+        <dt>Pitch Down</dt>
+        <dd>Decrease Pitch by 3 (0 min)</dd>
+        <dt>Switch to Chinese</dt>
+        <dd>Switch speech and recognition language to Chinese</dd>
+        <dt>Back</dt>
+        <dd>Back to main menu</dd>
+    </dl>
+    <h3>Search Menu</h3>
+    <dl>
+        <dt>Search for...</dt>
+        <dd>Search and show a snippet from wikipedia</dd>
+        <dt>Back</dt>
+        <dd>Back to main menu</dd>
+    </dl>
+</div>
+<div class="support">
+    <h2>中文时 (When in Chinese):</h2>
+    <h3>主菜单(Main Menu)</h3>
+    <dl>
+        <dt>搜索</dt>
+        <dd>进入搜索菜单 (Search for something)</dd>
+        <dt>更改设置</dt>
+        <dd>进入设置菜单 (Change settings)</dd>
+    </dl>
+    <h3>设置菜单(Setting Menu)</h3>
+    <dl>
+        <dt>增加音量</dt>
+        <dd>增加3音量 (最大为10) (Volume up)</dd>
+        <dt>减小音量</dt>
+        <dd>减少3音量 (最小为0) (Volume down)</dd>
+        <dt>增加音调</dt>
+        <dd>增加3音调 (最大为10) (Pitch up)</dd>
+        <dt>减小音调</dt>
+        <dd>减小3音调 (最小为0) (Pitch down)</dd>
+        <dt>使用英文</dt>
+        <dd>切换朗读和识别语言为英文 (Switch to English)</dd>
+        <dt>返回</dt>
+        <dd>返回主菜单(back)</dd>
+    </dl>
+    <h3>搜索菜单(Search Menu)</h3>
+    <dl>
+        <dt>搜索……</dt>
+        <dd>搜索条目 (Search for...)</dd>
+        <dt>返回</dt>
+        <dd>返回主菜单(back)</dd>
+    </dl>
+</div>
+</body>
+<script>
+    var listening = new webkitSpeechRecognition();
+    var speaking = new SpeechSynthesisUtterance();
+
+    const Menu = {
+        MAIN: 0,
+        SETTING: 1,
+        SEARCH: 2,
+        CONFIRM: 3
+    };
+
+    const Prompts = {
+        MAIN: 'main menu, do you want to search for something or change settings',
+        SETTING: 'What setting do you want to change, you can volume up, volume down, pitch up, pitch down or switch to chinese. Or say back to go to the main menu',
+        SEARCH: 'What do you want to search for? Or say back to go to the main menu'
+    }
+
+    const ChinesePrompts = {
+        MAIN: '主菜单，请选择搜索还是更改设置',
+        SETTING: '选择增加音量，减小音量, 增加音调，减小音调或者使用英文, 说返回能返回主菜单',
+        SEARCH: '你想搜索什么? 说返回能返回主菜单'
+    }
+
+    var menu = Menu.MAIN;
+
+    var search = '';
+
+    // When we hear a word or a phrase
+    listening.onresult = function(event) {
+        var interim_transcript = '';
+        for (var i = event.resultIndex; i < event.results.length; ++i) {
+            if (event.results[i].isFinal) {
+                $('#final').text($('#final').text() + event.results[i][0].transcript);
+            } else {
+                interim_transcript += event.results[i][0].transcript;
+            }
+        }
+        $('#interim').text(interim_transcript);
+    };
+
+    // When I end listening
+    listening.onend = function (event) {
+        // I hear nothing and I will keep listening
+        if ($('#final').text() == '') {
+            listen();
+        } else {
+            toggleStatus();
+            execute($('#final').text());
+        }
+    };
+
+    // When I end speaking
+    speaking.onend = function(event) {
+        toggleStatus();
+        $('#final').text('');
+        listen();
+    };
+
+    function toggleStatus() {
+        if ($('#status').text() == 'Speaking...') {
+            $('#status').text('Listening...').css('background-color', 'red');
+        } else {
+            $('#status').text('Speaking...').css('background-color', 'green');
+        }
+    }
+
+    function toggleLanguage() {
+        if (isEnglish()) {
+            listening.lang = 'zh-CN';
+            speaking.lang = 'zh-CN';
+            menu = Menu.MAIN;
+            setReply('已切换到中文, 请选择搜索还是更改设置');
+        } else {
+            listening.lang = 'en-US';
+            speaking.lang = 'en-US';
+            menu = Menu.MAIN;
+            setReply('Switch to English, please choose search for something or change settings');
+        }
+    }
+
+    function isEnglish() {
+        return listening.lang == 'en-US';
+    }
+
+    function setReply(text) {
+        $('#robot').text(text);
+    }
+
+    function setWekipedia(html) {
+        var attached = '';
+        if (isEnglish()) {
+            attached = 'What else do you want to search for? or say back to go back to the main menu.'
+        } else {
+            attached = '你还想搜索什么？说返回能返回主菜单'
+        }
+        $('#robot').html(html + ' ...' + attached);
+    }
+
+    function setInterationalReply(english, chinese) {
+        if (isEnglish()) {
+            setReply(english);
+        } else {
+            setReply(chinese);
+        }
+    }
+
+    function speak() {
+        speaking.text = $('#robot').text();
+        speechSynthesis.speak(speaking);
+    }
+
+    function listen() {
+        listening.start();
+    }
+
+    function execute(command) {
+        command = command.toLowerCase();
+        switch (menu) {
+            case Menu.MAIN:
+                executeMain(command);
+                break;
+            case Menu.SETTING:
+                executeSetting(command);
+                break;
+            case Menu.SEARCH:
+                executeSearch(command);
+                break;
+            case Menu.CONFIRM:
+                executeConfirm(command);
+                break;
+            default:
+                failToRecognize();
+        }
+    }
+
+    function executeMain(command) {
+        switch (command) {
+            case 'search for something':
+            case '搜索':
+                menu = Menu.SEARCH;
+                setInterationalReply(Prompts.SEARCH, ChinesePrompts.SEARCH);
+                break;
+            case 'change settings':
+            case '更改设置':
+                menu = Menu.SETTING;
+                setInterationalReply(Prompts.SETTING, ChinesePrompts.SETTING);
+                break;
+            default:
+                failToRecognize();
+        }
+        speak();
+    }
+
+    function executeSetting(command) {
+        switch (command) {
+            case 'volume up':
+            case '增加音量':
+                volumeUp();
+                break;
+            case 'volume down':
+            case '减小音量':
+                volumeDown();
+                break;
+            case 'pitch up':
+            case '增加音调':
+                pitchUp();
+                break;
+            case 'pitch down':
+            case '减小音调':
+                pitchDown();
+                break;
+            case 'switch to chinese':
+            case '使用英文':
+                toggleLanguage();
+                break;
+            case 'back':
+            case '返回':
+                menu = Menu.MAIN;
+                setInterationalReply(Prompts.MAIN, ChinesePrompts.MAIN);
+                break;
+            default:
+                failToRecognize();
+        }
+        speak();
+    }
+
+    function executeSearch(command) {
+        var searchPrefix = 'search for ';
+        var searchPrefixChinese = '搜索';
+        if (isEnglish() && command.startsWith(searchPrefix)) {
+            search = command.substr(searchPrefix.length);
+            setReply('Okay, You want to search for ' + search + ' is that correct? Answer yes or correct to continue');
+            menu = Menu.CONFIRM;
+        } else if (!isEnglish() && command.startsWith(searchPrefixChinese)) {
+            search = command.substr(searchPrefixChinese.length);
+            setReply('好的，你想搜索' + search + ' 对吗? 回答是或者好继续');
+            menu = Menu.CONFIRM;
+        } else {
+            if (command == 'back' || command == '返回') {
+                menu = Menu.MAIN;
+                setInterationalReply(Prompts.MAIN, ChinesePrompts.MAIN);
+            } else {
+                failToRecognize();
+            }
+        }
+        speak();
+    }
+
+    function executeConfirm(command) {
+        menu = Menu.SEARCH;
+        if (isEnglish() && (command == 'yes' || command == 'correct')) {
+            searchWiki(search, true);
+        } else if (!isEnglish() && (command == '是' || command == '好')) {
+            searchWiki(search, false);
+        } else {
+            setInterationalReply('What do you want to search for? Or say back to go to the previous menu', ChinesePrompts.SEARCH);
+            speak();
+        }
+    }
+
+    // Map from 0 - 1 to 0 - 10
+    function setVolume(value) {
+        if (value >= 10) {
+            speaking.volume = 1;
+            return 10;
+        } else if (value <= 0) {
+            speaking.volume = 0;
+            return 0;
+        } else {
+            speaking.volume = value / 10;
+            return value;
+        }
+    }
+
+    function getVolume() {
+        return Math.round(speaking.volume * 10);
+    }
+
+    // From 0 to 10
+    function volumeUp() {
+        var volume = setVolume(getVolume() + 3);
+        if (volume >= 10) {
+            setInterationalReply('Volume maxed (10)' + Prompts.SETTING, '音量已经最大 (10)' + ChinesePrompts.SETTING);
+        } else {
+            setInterationalReply('Volume is set to ' + volume + '. ' + Prompts.SETTING, '音量设为' + volume + '. ' + ChinesePrompts.SETTING);
+        }
+    }
+
+    // From 10 to 0
+    function volumeDown() {
+        var volume = setVolume(getVolume() - 3);
+        if (volume <= 0) {
+            setInterationalReply('Muted (0)' + Prompts.SETTING, '静音 (0)' + ChinesePrompts.SETTING);
+        } else {
+            setInterationalReply('Volume is set to ' + volume + '. ' + Prompts.SETTING, '音量设为' + volume + '. ' + ChinesePrompts.SETTING);
+        }
+    }
+
+    // Map from 0 - 2 to 0 - 10
+    function setPitch(value) {
+        if (value >= 10) {
+            speaking.pitch = 2;
+            return 10;
+        } else if (value <= 0) {
+            speaking.pitch = 0;
+            return 0;
+        } else {
+            speaking.pitch = value / 5;
+            return value;
+        }
+    }
+
+    function getPitch() {
+        return Math.round(speaking.pitch * 5);
+    }
+
+    // From 0 to 10
+    function pitchUp() {
+        var pitch = setPitch(getPitch() + 3);
+        if (pitch >= 10) {
+            setInterationalReply('Pitch maxed (10)' + Prompts.SETTING, '音调已经最大 (10)' + ChinesePrompts.SETTING);
+        } else {
+            setInterationalReply('Pitch is set to ' + pitch + Prompts.SETTING, '音调设为' + pitch + ChinesePrompts.SETTING);
+        }
+    }
+
+    // From 10 to 0
+    function pitchDown() {
+        var pitch = setPitch(getPitch() - 3);
+        if (pitch <= 0) {
+            setInterationalReply('Pitch mined (0)' + Prompts.SETTING, '音调已经最小 (0)' + ChinesePrompts.SETTING);
+        } else {
+            setInterationalReply('Pitch is set to ' + pitch + Prompts.SETTING, '音调设为' + pitch + ChinesePrompts.SETTING);
+        }
+    }
+
+    function failToRecognize() {
+        switch (menu) {
+            case Menu.MAIN:
+                setInterationalReply('Failed to recognize, please choose search for something or change settings', '识别失败，请选择搜索或者更改设置');
+                break;
+            case Menu.SETTING:
+                setInterationalReply('Failed to recognize ' + Prompts.SETTING, '识别失败, ' + ChinesePrompts.SETTING);
+                break;
+            case Menu.SEARCH:
+                setInterationalReply('Failed to recognize, please choose search for something or say back to go to the main menu.', '识别失败，你想搜索什么, 说返回能返回主菜单');
+                break;
+        }
+    }
+
+    function searchWiki(title, isEnglish) {
+        var myUrl = '';
+        if (isEnglish == true) {
+            myUrl = 'http://en.wikipedia.org/w/api.php';
+        } else {
+            myUrl = 'http://zh.wikipedia.org/w/api.php';
+        }
+        $.ajax({
+            url: myUrl,
+            data: { action: 'query', list: 'search', srsearch: title, format: 'json' },
+            dataType: 'jsonp',
+            success: processResult
+        });
+    }
+
+    function processResult(apiResult){
+        if (apiResult.query.search.length > 0) {
+            for (var i = 0; i < apiResult.query.search.length;i++) {
+                console.log(apiResult.query.search[i]);
+            }
+            setWekipedia(apiResult.query.search[0].snippet);
+        } else {
+            setReply('Nothing found');
+        }
+        speak();
+    }
+
+    $(document).ready(function() {
+        // Stop listening when you stop speaking
+        listening.continuous = false;
+        // Give interim results
+        listening.interimResults = true;
+        listening.lang = 'en-US';
+        speaking.voice = window.speechSynthesis.getVoices()[10];
+        speaking.voiceURI = 'native';
+        speaking.lang = 'en-US';
+        setVolume(5);
+        setPitch(5);
+        speaking.rate = 1.2; // 0.1 to 10
+        speak();
+    });
+</script>
+</html>
