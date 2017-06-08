@@ -1,0 +1,31 @@
+Dated: June 7th, 2017
+Authors: Ayushi Aggarwal and Wenxi Lu
+
+For any inquires regarding the system, please contact ayushiag@uw.edu and wenxil@uw.edu
+
+About the system:
+WikiBot provides responses to keyword based information request by returning snippets from English and Chinese Wikipedias. It also allows the user to control the volume, pitch, or language(English or Chinese only) of the bot.
+
+Use instructions: 
+1)	Navigate to http://students.washington.edu/wenxil/575/WikiBot.html
+
+2)	The system presents an introductory prompt. Once the status turns red from green, say either one of the following: 
+•	search for something
+•	change settings 
+
+3)	If you say 'search for something', WikiBot will prompt you with 'What do you want to search for? Or say back to go back to the main menu'. 
+•	If you want to search, please say 'search for' followed by your search string. WikiBot will search Wikipedia for your search string. For example, if you said 'search for dumplings', it will return 'butter-bean dumplings.[citation needed] Steamed dumplings are found throughout the region...'. The system will then prompt whether you want to search for something else or go back to the main menu. 
+•	If you want to go back to the main menu, say 'back'. The system will say Main menu and ask for whether you want to search for something or change settings of WikiBot.
+
+4)	If you say 'change settings', WikiBot will prompt you with 'Which setting would you like to change? You can turn volume up, volume down, pitch up, pitch down, or switch to chinese. Or say back to go to the main menu.' Say one of the following: 
+•	Volume up - System will increase the volume upto maximum of 10
+•	Volume down - System will decrease the volume until muted
+•	Pitch up - System will increase pitch upto maximum of 10
+•	Pitch down - System will decrease pitch until 0
+•	Switch to Chinese - WikiBot's speaking and listening language will be changed to Chinese.
+•	back - this will take you back to the main menu and choose to search for something.
+
+5)	For each of the options chosen in (4), the system provides confirmation of the task performed and further prompts the user if they would like to change another setting or go back to the main menu. 
+
+6)	Similar steps can be performed once the user switches to Chinese. Commands for Chinese are given at the bottom of the application page.
+
